@@ -1,0 +1,18 @@
+#!/bin/bash
+
+# הפעלת קובץ הפיתון ושמירת הפלט במשתנה msg
+msg=$(python get_msg.py)
+echo $msg
+# בדיקה אם הפקודה python התבצעה בהצלחה
+if [ $? -eq 0 ]; then
+    # הוספת כל השינויים
+    git add .
+
+    # ביצוע קומיט עם ההודעה שהתקבלה מקובץ הפיתון
+    git commit -m "$msg"
+
+    # דחיפה ל-remote
+    git push
+else
+    echo "Error. Try again letter"
+fi
