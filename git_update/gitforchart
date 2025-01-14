@@ -8,5 +8,5 @@ if [ $? -eq 0 ]; then
 
     git push
 else
-    echo "Error. Try again letter"
+    echo "Error. Try again letter!"
 fi
