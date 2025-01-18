@@ -20,19 +20,12 @@ if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument("pattern", type=str, help="a pattern")
-    parser.add_argument("-i", "--include", type=str, default= "", help="letters to include")
-    parser.add_argument("-e", "--exclude", type=str, default= "", help="letters to exclude")
+    parser.add_argument("-i", "--include", action="append", help="letters to include")
+    parser.add_argument("-e", "--exclude", action="append", help="letters to exclude")
     
     args = parser.parse_args()
-    print(args)
-    find_matching_words(args.pattern, args.include, args.exclude)
-    
-    
-def old_main():
-    while True:
-        pattern = input("Enter a pattern (or q to exit): ")
-        if pattern.lower() == 'q':
-            break
-        include = input("Enter letters to include: ")
-        exclude = input("Enter letters to exclude: ")
-        find_matching_words(pattern, include, exclude)
+   
+    include_str = "".join(args.include) if args.include else ""
+    exclude_str = "".join(args.exclude) if args.exclude else ""
+
+    find_matching_words(args.pattern, include_str, exclude_str)    
