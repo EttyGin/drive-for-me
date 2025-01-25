@@ -1,8 +1,0 @@
-dir="/usr/my_bin/git_for_chart_bin"
-me=$(whoami)
-sudo mkdir -p $dir && sudo cp get_msg.py $dir &&
-sudo cp gitforchart /usr/my_bin
-sudo chmod -R +x $dir
-sudo echo 'PATH="/usr/my_bin/git_for_chart_bin:$PATH"' >> /home/$me/.profile
-source /home/$me/.profile
-echo Success!
