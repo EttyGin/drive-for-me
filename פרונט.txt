@@ -1,0 +1,182 @@
+import base64
+import io
+import json
+import numpy as np
+import dash
+from dash import html, dcc, callback, Input, Output, State
+from dash.exceptions import PreventUpdate
+import requests
+from PIL import Image
+
+# קבועים
+TRITON_URL = "http://localhost:8000/v2/models/fruit_classifier/infer"  # URL של שרת Triton
+CLASSES = [
+    "Apple", "Banana", "Orange", "Strawberry", "Grape", "Pear", "Pineapple", 
+    "Watermelon", "Kiwi", "Mango", "Lemon"
+]  # רשימת המחלקות בדאטאסט Fruits-360 (דוגמה חלקית)
+
+# יצירת אפליקציית Dash
+app = dash.Dash(__name__, title="Fruits-360 Classification")
+
+# עיצוב בסיסי עם CSS
+app.layout = html.Div([
+    html.H1("Fruits-360 Image Classification", style={'textAlign': 'center'}),
+    html.Hr(),
+    
+    # אזור העלאת התמונה
+    html.Div([
+        html.H3("Upload an image of a fruit:"),
+        dcc.Upload(
+            id='upload-image',
+            children=html.Div([
+                'Drag and Drop or ',
+                html.A('Select an Image')
+            ]),
+            style={
+                'width': '100%',
+                'height': '60px',
+                'lineHeight': '60px',
+                'borderWidth': '1px',
+                'borderStyle': 'dashed',
+                'borderRadius': '5px',
+                'textAlign': 'center',
+                'margin': '10px'
+            },
+            multiple=False
+        ),
+    ], style={'padding': '20px'}),
+    
+    # תצוגת התמונה המועלית
+    html.Div(id='output-image-upload', style={'textAlign': 'center'}),
+    
+    # תוצאות הסיווג
+    html.Div(id='prediction-results', style={'padding': '20px', 'textAlign': 'center'}),
+    
+    # כפתור לביצוע סיווג
+    html.Div([
+        html.Button('Classify Image', id='classify-button', 
+                   style={'fontSize': '18px', 'margin': '10px'})
+    ], style={'textAlign': 'center'}),
+    
+    # שמירת התמונה המעובדת בצורה נסתרת
+    dcc.Store(id='processed-image')
+], style={'maxWidth': '800px', 'margin': 'auto'})
+
+# פונקציה לעיבוד התמונה שהועלתה
+def parse_contents(contents):
+    if contents is None:
+        raise PreventUpdate
+    
+    content_type, content_string = contents.split(',')
+    decoded = base64.b64decode(content_string)
+    
+    try:
+        # פתיחת התמונה והמרה לפורמט המתאים
+        img = Image.open(io.BytesIO(decoded))
+        img = img.resize((100, 100))  # גודל תמונה סטנדרטי בדאטאסט Fruits-360
+        img = img.convert('RGB')
+        
+        # המרה לנתונים בפורמט המתאים לשרת Triton
+        img_array = np.array(img).astype(np.float32) / 255.0
+        
+        return {
+            'image': img_array.tolist(),
+            'src': contents
+        }
+    except Exception as e:
+        return {
+            'image': None,
+            'src': None,
+            'error': str(e)
+        }
+
+# עדכון תצוגת התמונה בממשק
+@callback(
+    Output('output-image-upload', 'children'),
+    Output('processed-image', 'data'),
+    Input('upload-image', 'contents')
+)
+def update_output(contents):
+    if contents is None:
+        raise PreventUpdate
+    
+    result = parse_contents(contents)
+    
+    if 'error' in result:
+        return html.Div([
+            html.H5('Error processing the image:'),
+            html.Pre(result['error'])
+        ]), None
+    
+    return html.Div([
+        html.Img(src=result['src'], style={'maxHeight': '300px', 'maxWidth': '300px'})
+    ]), result
+
+# שליחת התמונה לסיווג בשרת Triton
+@callback(
+    Output('prediction-results', 'children'),
+    Input('classify-button', 'n_clicks'),
+    State('processed-image', 'data')
+)
+def classify_image(n_clicks, data):
+    if n_clicks is None or data is None or 'image' not in data:
+        raise PreventUpdate
+    
+    try:
+        # הכנת הנתונים לשליחה לשרת Triton
+        image_data = np.array(data['image'], dtype=np.float32)
+        
+        payload = {
+            "inputs": [
+                {
+                    "name": "input",
+                    "shape": [1, 100, 100, 3],
+                    "datatype": "FP32",
+                    "data": image_data.flatten().tolist()
+                }
+            ]
+        }
+        
+        # שליחת הבקשה לשרת Triton
+        response = requests.post(TRITON_URL, json=payload)
+        response.raise_for_status()
+        
+        # פענוח התשובה
+        result = response.json()
+        outputs = result.get('outputs', [])
+        if not outputs:
+            return html.Div([html.H5('Error: No output from inference server')])
+        
+        # חילוץ הסתברויות המחלקות
+        probabilities = np.array(outputs[0]['data'], dtype=np.float32)
+        pred_class_idx = np.argmax(probabilities)
+        pred_class = CLASSES[pred_class_idx] if pred_class_idx < len(CLASSES) else f"Unknown Class {pred_class_idx}"
+        confidence = probabilities[pred_class_idx] * 100
+        
+        # הצגת התוצאות
+        return html.Div([
+            html.H3(f"Prediction: {pred_class}", style={'color': 'green'}),
+            html.H4(f"Confidence: {confidence:.2f}%"),
+            html.Hr(),
+            html.H5("Top 3 Predictions:"),
+            html.Div([
+                html.Div([
+                    html.P(f"{CLASSES[idx] if idx < len(CLASSES) else f'Class {idx}'}: {probabilities[idx]*100:.2f}%")
+                ]) for idx in np.argsort(probabilities)[-3:][::-1]
+            ])
+        ])
+    
+    except requests.exceptions.RequestException as e:
+        return html.Div([
+            html.H5('Error connecting to Triton server:'),
+            html.Pre(str(e))
+        ])
+    except Exception as e:
+        return html.Div([
+            html.H5('Error during classification:'),
+            html.Pre(str(e))
+        ])
+
+# הפעלת השרת
+if __name__ == '__main__':
+    app.run_server(debug=True, host='0.0.0.0', port=8050)
