@@ -1,0 +1,92 @@
+📌 מדריך להרמת שרת HTTP ב-VM באמצעות Nginx להפצת קובץ .deb
+🔹 שלב 1: התקנת Nginx
+בהנחה שאת על מערכת Debian/Ubuntu, הריצי:
+
+bash
+Copy
+Edit
+sudo apt update && sudo apt install -y nginx
+לאחר ההתקנה, ודאי שהוא פועל:
+
+bash
+Copy
+Edit
+sudo systemctl status nginx
+אם הוא לא רץ, הפעלי אותו:
+
+bash
+Copy
+Edit
+sudo systemctl start nginx
+🔹 שלב 2: העברת הקובץ .deb לשרת
+הזיזי את הקובץ dropbe.deb לתיקיית ברירת המחדל של Nginx:
+
+bash
+Copy
+Edit
+sudo mv /path/to/dropbe.deb /var/www/html/
+ודאי שהקובץ נמצא שם:
+
+bash
+Copy
+Edit
+ls -l /var/www/html/
+🔹 שלב 3: גישה לקובץ דרך HTTP
+כעת ניתן לגשת לקובץ דרך הדפדפן או wget:
+
+bash
+Copy
+Edit
+wget http://your-vm-ip/dropbe.deb
+או פשוט לפתוח http://your-vm-ip/dropbe.deb בדפדפן.
+
+🔹 שלב 4: הפיכת השרת לקבוע (רץ גם אחרי אתחול)
+ודאי שהשרת עולה אוטומטית:
+
+bash
+Copy
+Edit
+sudo systemctl enable nginx
+🔹 שלב 5 (אופציונלי): שינוי הפורט של השרת
+אם את רוצה להשתמש בפורט אחר, למשל 8080:
+
+ערכי את קובץ ההגדרות של Nginx:
+
+bash
+Copy
+Edit
+sudo nano /etc/nginx/sites-available/default
+חפשי את השורה:
+
+nginx
+Copy
+Edit
+listen 80;
+והחליפי אותה ב:
+
+nginx
+Copy
+Edit
+listen 8080;
+שמרי (CTRL + X, ואז Y, ואז ENTER).
+
+טעני מחדש את Nginx:
+
+bash
+Copy
+Edit
+sudo systemctl restart nginx
+כעת ניתן לגשת לקובץ דרך:
+
+bash
+Copy
+Edit
+wget http://your-vm-ip:8080/dropbe.deb
+🚀 סיכום
+✅ התקנת Nginx
+✅ הזזת הקובץ .deb לשרת
+✅ פתיחת גישה דרך wget
+✅ הבטחה שהשרת יפעל תמיד
+
+🔹 שיטה זו מהירה, קלה, ויציבה לשימוש ארוך טווח.
+אם יש שאלות נוספות – אני כאן 😊
