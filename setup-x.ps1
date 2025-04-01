@@ -40,3 +40,23 @@ if ($DISPLAY -and $XmingProcess -and $PortListening) {
 } else {
     Write-Host "Something is not set up correctly. Please check the output above."
 }
+
+# Path to the config file
+$configFile = "C:\Users\1\.ssh\config"
+
+# Content to append to the file
+$content = @"
+Host *
+  ForwardAgent yes
+  ForwardX11 yes
+  ForwardX11Trusted yes
+"@
+
+# Check if the file exists, and create it if it doesn't
+if (-Not (Test-Path $configFile)) {
+    New-Item -ItemType File -Path $configFile -Force
+}
+
+# Append the content to the file
+Add-Content -Path $configFile -Value $content
+Write-Host "Content successfully added to the config file!"

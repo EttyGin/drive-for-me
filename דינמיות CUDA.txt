@@ -1,0 +1,15 @@
+    dinamuc: |
+      c.KubeSpawner.pre_spawn_hook = lambda spawner: modify_resource_limits(spawner)
+
+      def modify_resource_limits(spawner):
+          # קבלת ערך ה-CPU או ה-GPU
+          resource_type = spawner.user_options.get('resource_type', 'CPU')
+          resource_limit = float(spawner.user_options.get('resource_limit', 1))
+
+          if resource_type == 'CPU':
+              spawner.cpu_limit = resource_limit
+              spawner.mem_limit = f'{resource_limit}G'  # לדוגמה: הגדרת זיכרון בהתאם ל-CPU
+          elif resource_type == 'GPU':
+              spawner.environment['NVIDIA_VISIBLE_DEVICES'] = 'all'  # לאפשר גישה ל-GPU
+              spawner.extra_resource_requests['nvidia.com/gpu'] = 1  # הכנת בקשה למשאב GPU
+              spawner.extra_resource_limits['nvidia.com/gpu'] = resource_limit
