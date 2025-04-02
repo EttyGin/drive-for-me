@@ -46,10 +46,12 @@ $configFile = "C:\Users\1\.ssh\config"
 
 # Content to append to the file
 $content = @"
+
 Host *
   ForwardAgent yes
   ForwardX11 yes
   ForwardX11Trusted yes
+
 "@
 
 # Check if the file exists, and create it if it doesn't

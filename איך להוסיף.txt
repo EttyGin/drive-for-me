@@ -1,0 +1,36 @@
+  services: 
+    binder:
+      url: "http://localhost:8585/"
+
+בHUB
+
+
+
+בסינגליוזר
+
+  extraVolumes:
+    - name: sudoers-volume
+      emptyDir: {}
+
+  extraVolumeMounts:
+    - name: sudoers-volume
+      mountPath: /etc/sudoers.d
+
+  extraFiles:
+    jovyan-sudo:
+      mountPath: /etc/sudoers.d/jovyan
+      mode: 0440
+      stringData: |
+        jovyan ALL=(ALL) NOPASSWD: ALL
+
+singleuser:
+  extraPorts:
+    ssh:
+      containerPort: 22
+      protocol: TCP
+  # extraLabels:
+  #   ssh-enabled: "true"
+  #   user-pod: "{username}"
+
+  workingDir: /home/jovyan
+  extraEnv: {}
